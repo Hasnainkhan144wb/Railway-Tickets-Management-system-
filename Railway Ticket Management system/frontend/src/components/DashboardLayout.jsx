@@ -145,10 +145,7 @@ const DashboardLayout = ({
             pathname
         );
 
-    const isOverlayRoute =
-        isStaffOverlay ||
-        isAdminOverlay ||
-        isPassengerOverlay;
+    const isOverlayRoute = false;
 
     const renderBackgroundContent =
         () => {

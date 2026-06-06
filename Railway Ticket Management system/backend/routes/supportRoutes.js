@@ -1,43 +1,30 @@
-const express =
-    require("express");
-
-const router =
-    express.Router();
-
+const express = require("express");
+const router = express.Router();
 const {
-
     createSupport,
-
     getSupports,
-
     resolveSupport,
-
-} = require(
-    "../controllers/supportController"
-);
-
+    addMessage,
+    rateSupport,
+    closeTicket
+} = require("../controllers/supportController");
 
 // CREATE REQUEST
-
-router.post(
-    "/",
-    createSupport
-);
-
+router.post("/", createSupport);
 
 // GET REQUESTS
-
-router.get(
-    "/",
-    getSupports
-);
-
+router.get("/", getSupports);
 
 // RESOLVE REQUEST
+router.put("/resolve/:id", resolveSupport);
 
-router.put(
-    "/resolve/:id",
-    resolveSupport
-);
+// ADD MESSAGE TO CHAT
+router.put("/:id/message", addMessage);
+
+// RATE TICKET SERVICE
+router.put("/:id/rate", rateSupport);
+
+// CLOSE TICKET
+router.put("/:id/close", closeTicket);
 
 module.exports = router;

@@ -58,8 +58,8 @@ const Sidebar = () => {
                         <li>
 
                             <Link
-                                to="/admin-dashboard"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                to="/admin-dashboard?tab=dashboard"
+                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
                             >
                                 <FaHome />
                                 Dashboard
@@ -71,8 +71,8 @@ const Sidebar = () => {
                         <li>
 
                             <Link
-                                to="/manage-trains"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                to="/admin-dashboard?tab=trains"
+                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
                             >
                                 <FaTrain />
                                 Manage Trains
@@ -84,8 +84,8 @@ const Sidebar = () => {
                         <li>
 
                             <Link
-                                to="/manage-users"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                to="/admin-dashboard?tab=users"
+                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
                             >
                                 <FaUsers />
                                 Manage Users
@@ -97,8 +97,8 @@ const Sidebar = () => {
                         <li>
 
                             <Link
-                                to="/bookings"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                to="/admin-dashboard?tab=bookings"
+                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
                             >
                                 <FaClipboardList />
                                 All Bookings
@@ -108,8 +108,8 @@ const Sidebar = () => {
                         <li>
 
                             <Link
-                                to="/reports-analytics"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                to="/admin-dashboard?tab=reports"
+                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
                             >
 
                                 <FaChartBar />
@@ -219,8 +219,8 @@ const Sidebar = () => {
                         <li>
 
                             <Link
-                                to="/staff-dashboard"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                to="/staff-dashboard?tab=dashboard"
+                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
                             >
                                 <FaHome />
                                 Dashboard
@@ -232,8 +232,8 @@ const Sidebar = () => {
                         <li>
 
                             <Link
-                                to="/staff-bookings"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                to="/staff-dashboard?tab=bookings"
+                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
                             >
                                 <FaClipboardList />
                                 Manage Bookings
@@ -245,8 +245,8 @@ const Sidebar = () => {
                         <li>
 
                             <Link
-                                to="/booking-records"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                to="/staff-dashboard?tab=records"
+                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
                             >
 
                                 <FaTicketAlt />
@@ -259,8 +259,8 @@ const Sidebar = () => {
                         <li>
 
                             <Link
-                                to="/verify-tickets"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                to="/staff-dashboard?tab=verify"
+                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
                             >
 
                                 <FaCheckCircle />
@@ -272,8 +272,8 @@ const Sidebar = () => {
                         </li>
                         <li>
                             <Link
-                                to="/manage-seats"
-                                className="flex items-center gap-3 hover:text-yellow-300"
+                                to="/staff-dashboard?tab=seats"
+                                className="flex items-center gap-3 hover:text-yellow-300 font-bold"
                             >
                                 <FaTrain />
                                 Manage Seats
@@ -281,8 +281,8 @@ const Sidebar = () => {
                         </li>
                         <li>
                             <Link
-                                to="/manage-train-status"
-                                className="flex items-center gap-3 hover:text-yellow-300"
+                                to="/staff-dashboard?tab=status"
+                                className="flex items-center gap-3 hover:text-yellow-300 font-bold"
                             >
                                 <FaTrain />
                                 Train Status
@@ -291,8 +291,8 @@ const Sidebar = () => {
                         <li>
 
                             <Link
-                                to="/support-requests"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                to="/staff-dashboard?tab=support"
+                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
                             >
 
                                 <FaHeadset />

@@ -5,6 +5,8 @@ const router = express.Router();
 const {
   registerUser,
   loginUser,
+  checkEmail,
+  updateProfile,
 } = require("../controllers/authController");
 
 
@@ -13,5 +15,9 @@ const {
 router.post("/register", registerUser);
 
 router.post("/login", loginUser);
+
+router.post("/check-email", checkEmail);
+
+router.put("/profile/:id", updateProfile);
 
 module.exports = router;
