@@ -1,23 +1,21 @@
 const { GoogleGenAI } = require('@google/genai');
 
-// 1. Client initialize karein
-const ai = new GoogleGenAI({ apiKey: "AQ.Ab8RN6JGQohjyLSixHcjnI97Yc3nmtp-41iiptZ9FPHvbIaWXw" });
+const ai = new GoogleGenAI({ apiKey: process.env.gemini_api_key });
 
-async function askGemini(message) {
+async function askGemini(systemPrompt, userMessage) {
     try {
-        // 2. Naye SDK ke mutabiq direct model aur content generate karein
+        const fullPrompt = `${systemPrompt}\n\nUser message: ${userMessage}`;
+
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: message,
+            contents: fullPrompt,
         });
 
-        // 3. Response text return karein
         return response.text;
     } catch (error) {
-        console.error("Gemini API Error:", error);
+        console.error("Gemini API Error:", error.message);
         throw error;
     }
 }
 
-// Apne routes mein use karne ke liye export zaroor karein
 module.exports = { askGemini };
