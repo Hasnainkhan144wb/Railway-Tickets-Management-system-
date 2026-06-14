@@ -15,6 +15,7 @@ const createBooking = async (req, res) => {
             cnic,
             selectedSeats,
             coachNumber,
+            status,
         } = req.body;
 
         // VALIDATIONS
@@ -22,6 +23,13 @@ const createBooking = async (req, res) => {
         if (!passengerName || passengerName.trim() === "") {
             return res.status(400).json({
                 message: "Full Name is required",
+            });
+        }
+
+        const nameRegex = /^[A-Za-z\s]+$/;
+        if (!nameRegex.test(passengerName)) {
+            return res.status(400).json({
+                message: "Full Name must only contain letters and spaces",
             });
         }
 
@@ -140,9 +148,7 @@ const createBooking = async (req, res) => {
                 paymentId,
                 paymentStatus: "pending",
                 verified: false,
-
-                status:
-                    "confirmed",
+                status: status || "confirmed",
             });
 
         try {
@@ -390,6 +396,12 @@ const verifyTicket =
                 });
             }
 
+            if (booking.status === "cancelled") {
+                return res.status(400).json({
+                    message: "Cannot verify a cancelled ticket",
+                });
+            }
+
             if (
                 booking.paymentStatus !==
                 "paid"
@@ -403,6 +415,8 @@ const verifyTicket =
 
             booking.verified =
                 true;
+            booking.status =
+                "confirmed";
 
             await booking.save();
 
@@ -490,7 +504,7 @@ const getUserBookingStats = async (req, res) => {
         const bookings = await Booking.find({ user: userId }).populate("train");
 
         const confirmedBookings = bookings.filter(b => b.status === "confirmed");
-        const totalBookings = confirmedBookings.length;
+        const totalBookings = bookings.length;
 
         const parseTime = (timeStr) => {
             if (!timeStr) return { hours: 0, minutes: 0 };

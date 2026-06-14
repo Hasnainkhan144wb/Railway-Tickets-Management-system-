@@ -25,9 +25,8 @@ const Features = () => {
   return (
     <section
       id="features"
-      className={`py-20 px-6 transition-colors duration-300 ${
-        darkMode ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-800"
-      }`}
+      className={`py-20 px-6 transition-colors duration-300 ${darkMode ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-800"
+        }`}
     >
       <div className="max-w-7xl mx-auto">
         <div className="text-center max-w-2xl mx-auto mb-16">
@@ -44,11 +43,10 @@ const Features = () => {
           {featuresList.map((feature, idx) => (
             <div
               key={idx}
-              className={`p-8 rounded-2xl shadow-md border hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ${
-                darkMode
+              className={`p-8 rounded-2xl shadow-md border hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ${darkMode
                   ? "bg-gray-800/50 border-gray-700/80 text-white"
                   : "bg-white border-gray-100 text-gray-800"
-              }`}
+                }`}
             >
               <div className="p-4 bg-yellow-500/10 rounded-2xl inline-block mb-6">
                 {feature.icon}

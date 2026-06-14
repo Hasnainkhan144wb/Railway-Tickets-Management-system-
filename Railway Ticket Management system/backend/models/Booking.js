@@ -148,6 +148,7 @@ const bookingSchema =
                 enum: [
                     "confirmed",
                     "cancelled",
+                    "Pending Verification",
                 ],
 
                 default: "confirmed",

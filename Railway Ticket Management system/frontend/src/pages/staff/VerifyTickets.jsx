@@ -45,7 +45,7 @@ const VerifyTickets = ({ isSubView }) => {
     setScanResult(null);
     setTimeout(() => {
       // Pick a random paid booking to simulate a scan
-      const paidBookings = bookings.filter(b => b.paymentStatus === "paid");
+      const paidBookings = bookings.filter(b => b.paymentStatus === "paid" && (b.status === "confirmed" || b.status === "Pending Verification"));
       if (paidBookings.length > 0) {
         const randomBooking = paidBookings[Math.floor(Math.random() * paidBookings.length)];
         setScanResult(randomBooking);
@@ -63,7 +63,7 @@ const VerifyTickets = ({ isSubView }) => {
     if (!scannedId.trim()) return;
 
     const match = bookings.find(
-      b => b.paymentId === scannedId.trim() || b._id === scannedId.trim()
+      b => (b.paymentId === scannedId.trim() || b._id === scannedId.trim()) && (b.status === "confirmed" || b.status === "Pending Verification")
     );
 
     if (match) {
@@ -79,6 +79,7 @@ const VerifyTickets = ({ isSubView }) => {
 
   const getFilteredBookings = () => {
     return bookings.filter(b => {
+      if (b.status === "cancelled") return false;
       const name = b.passengerName || "";
       const cnic = b.cnic || "";
       const pId = b.paymentId || "";

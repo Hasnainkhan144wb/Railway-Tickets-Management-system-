@@ -37,6 +37,11 @@ const trainSchema =
         required: true,
       },
 
+      travelDate: {
+        type: String,
+        required: true,
+      },
+
 
       // TOTAL AVAILABLE CAPACITY
       seats: {

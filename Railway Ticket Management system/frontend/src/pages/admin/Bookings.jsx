@@ -56,7 +56,7 @@ const BookingRecords = ({ isSubView }) => {
             className="border p-3 rounded-xl flex-grow focus:outline-none focus:border-blue-900 transition text-sm"
           />
           <div className="flex gap-2">
-            {["all", "confirmed", "cancelled"].map((status) => (
+            {["all", "confirmed", "Pending Verification", "cancelled"].map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
@@ -107,6 +107,8 @@ const BookingRecords = ({ isSubView }) => {
                         className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
                           booking.status === "confirmed"
                             ? "bg-green-100 text-green-700"
+                            : booking.status === "Pending Verification"
+                            ? "bg-amber-100 text-amber-700"
                             : "bg-red-100 text-red-700"
                         }`}
                       >

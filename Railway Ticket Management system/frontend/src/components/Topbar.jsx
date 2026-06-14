@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { FaBell, FaCamera, FaTimes, FaUser, FaEnvelope, FaLock } from "react-icons/fa";
+import { FaBell, FaCamera, FaTimes, FaUser, FaEnvelope, FaLock, FaSun, FaMoon } from "react-icons/fa";
 import axios from "axios";
+import { useTheme } from "../context/ThemeContext";
 
 const Topbar = () => {
+  const { darkMode, toggleTheme } = useTheme();
   const [user, setUser] = useState(null);
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
@@ -130,6 +132,12 @@ const Topbar = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Limit size to 5MB (5 * 1024 * 1024 bytes)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size exceeds the 5MB limit. Please upload a smaller image.");
+      return;
+    }
+
     const reader = new FileReader();
     reader.onloadend = () => {
       setProfileForm(prev => ({
@@ -153,12 +161,19 @@ const Topbar = () => {
     try {
       setProfileLoading(true);
       const userId = user.id || user._id;
-      const res = await axios.put(`http://localhost:5000/api/auth/profile/${userId}`, {
-        name: profileForm.name,
-        email: profileForm.email,
+
+      const payload = {
         avatar: profileForm.avatar,
-        password: profileForm.password || undefined
-      });
+      };
+
+      if (user.role === "passenger") {
+        payload.name = profileForm.name;
+        if (profileForm.password) {
+          payload.password = profileForm.password;
+        }
+      }
+
+      const res = await axios.put(`http://localhost:5000/api/auth/profile/${userId}`, payload);
 
       if (res.data.success) {
         alert("Profile Updated Successfully!");
@@ -262,6 +277,19 @@ const Topbar = () => {
           </div>
         )}
 
+        {/* DARK / LIGHT MODE BUTTON */}
+        <button
+          onClick={toggleTheme}
+          className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white p-2 rounded-full hover:scale-110 transition flex items-center justify-center w-9 h-9 border dark:border-gray-700 cursor-pointer"
+          aria-label="Toggle dark mode"
+        >
+          {darkMode ? (
+            <FaSun className="text-yellow-500" />
+          ) : (
+            <FaMoon className="text-indigo-900" />
+          )}
+        </button>
+
         {/* CLICKABLE USER AVATAR & NAME */}
         <div
           onClick={() => setIsProfileOpen(true)}
@@ -337,14 +365,19 @@ const Topbar = () => {
               {/* Name field */}
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Full Name</label>
-                <div className="flex items-center border rounded-xl px-3 py-2 bg-gray-50/50 focus-within:border-green-900 transition">
+                <div className={`flex items-center border rounded-xl px-3 py-2 transition ${
+                  user?.role === "passenger" ? "bg-gray-50/50 focus-within:border-green-900" : "bg-gray-100 cursor-not-allowed"
+                }`}>
                   <FaUser className="text-gray-450 mr-2" size={14} />
                   <input
                     type="text"
                     required
+                    disabled={user?.role !== "passenger"}
                     value={profileForm.name}
                     onChange={(e) => setProfileForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full bg-transparent focus:outline-none text-sm text-gray-700"
+                    className={`w-full bg-transparent focus:outline-none text-sm text-gray-700 ${
+                      user?.role !== "passenger" ? "cursor-not-allowed text-gray-400" : ""
+                    }`}
                   />
                 </div>
               </div>
@@ -352,38 +385,40 @@ const Topbar = () => {
               {/* Email field */}
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Email Address</label>
-                <div className="flex items-center border rounded-xl px-3 py-2 bg-gray-50/50 focus-within:border-green-900 transition">
+                <div className="flex items-center border rounded-xl px-3 py-2 bg-gray-100 cursor-not-allowed transition">
                   <FaEnvelope className="text-gray-450 mr-2" size={14} />
                   <input
                     type="email"
                     required
+                    disabled
                     value={profileForm.email}
-                    onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full bg-transparent focus:outline-none text-sm text-gray-700"
+                    className="w-full bg-transparent focus:outline-none text-sm text-gray-400 cursor-not-allowed"
                   />
                 </div>
               </div>
 
               {/* Password field */}
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                  New Password <span className="text-gray-400 font-medium">(Leave blank to keep current)</span>
-                </label>
-                <div className="flex items-center border rounded-xl px-3 py-2 bg-gray-50/50 focus-within:border-green-900 transition">
-                  <FaLock className="text-gray-450 mr-2" size={14} />
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                    value={profileForm.password}
-                    onChange={(e) => setProfileForm(prev => ({ ...prev, password: e.target.value }))}
-                    className="w-full bg-transparent focus:outline-none text-sm text-gray-700"
-                  />
+              {user?.role === "passenger" && (
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                    New Password <span className="text-gray-400 font-medium">(Leave blank to keep current)</span>
+                  </label>
+                  <div className="flex items-center border rounded-xl px-3 py-2 bg-gray-50/50 focus-within:border-green-900 transition">
+                    <FaLock className="text-gray-450 mr-2" size={14} />
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      value={profileForm.password}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, password: e.target.value }))}
+                      className="w-full bg-transparent focus:outline-none text-sm text-gray-700"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Confirm Password field */}
-              {profileForm.password && (
+              {user?.role === "passenger" && profileForm.password && (
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Confirm New Password</label>
                   <div className="flex items-center border rounded-xl px-3 py-2 bg-gray-50/50 focus-within:border-green-900 transition">

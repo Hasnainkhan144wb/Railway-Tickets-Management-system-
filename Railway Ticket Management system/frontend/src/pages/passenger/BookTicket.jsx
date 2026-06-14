@@ -33,7 +33,6 @@ const BookTicket = () => {
 
     // NEW ADVANCED STATES
     const [travelDate, setTravelDate] = useState(new Date().toISOString().split('T')[0]);
-    const [passengerCount, setPassengerCount] = useState(1);
     const [sortBy, setSortBy] = useState("");
     const [promoCode, setPromoCode] = useState("");
     const [discountPercentage, setDiscountPercentage] = useState(0);
@@ -43,6 +42,7 @@ const BookTicket = () => {
     const [cardDetails, setCardDetails] = useState({ number: "", expiry: "", cvc: "" });
     const [walletPhone, setWalletPhone] = useState("");
     const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
+    const [showChallanSuccessModal, setShowChallanSuccessModal] = useState(false);
     const [timeLeft, setTimeLeft] = useState(600); // 10 minutes session
     const [showTimeoutModal, setShowTimeoutModal] = useState(false);
 
@@ -91,14 +91,16 @@ const BookTicket = () => {
         if (location.state && trains.length > 0) {
             const src = location.state.source || "";
             const dest = location.state.destination || "";
+            const date = location.state.travelDate || "";
             setSource(src);
             setDestination(dest);
+            if (date) setTravelDate(date);
 
             const filtered = trains.filter((train) => {
-                return (
-                    train.source.toLowerCase().includes(src.toLowerCase()) &&
-                    train.destination.toLowerCase().includes(dest.toLowerCase())
-                );
+                const matchSource = src.trim() ? train.source.toLowerCase().includes(src.trim().toLowerCase()) : true;
+                const matchDest = dest.trim() ? train.destination.toLowerCase().includes(dest.trim().toLowerCase()) : true;
+                const matchDate = date ? train.travelDate === date : true;
+                return matchSource && matchDest && matchDate;
             });
             setFilteredTrains(filtered);
         }
@@ -121,24 +123,17 @@ const BookTicket = () => {
 
     // SEARCH TRAINS
     const searchTrains = () => {
-        if (!source.trim()) {
-            alert("Please enter a starting/source station");
-            return;
-        }
-        if (!destination.trim()) {
-            alert("Please enter a destination station");
-            return;
-        }
-        if (!travelDate) {
-            alert("Please select your travel date");
-            return;
-        }
-
         const filtered = trains.filter((train) => {
-            return (
-                train.source.toLowerCase().includes(source.toLowerCase()) &&
-                train.destination.toLowerCase().includes(destination.toLowerCase())
-            );
+            const matchSource = source.trim()
+                ? train.source.toLowerCase().includes(source.trim().toLowerCase())
+                : true;
+            const matchDest = destination.trim()
+                ? train.destination.toLowerCase().includes(destination.trim().toLowerCase())
+                : true;
+            const matchDate = travelDate
+                ? train.travelDate === travelDate
+                : true;
+            return matchSource && matchDest && matchDate;
         });
         setFilteredTrains(filtered);
     };
@@ -171,6 +166,7 @@ const BookTicket = () => {
         setCardDetails({ number: "", expiry: "", cvc: "" });
         setWalletPhone("");
         setIsBookingConfirmed(false);
+        setShowChallanSuccessModal(false);
         setTimeLeft(600);
     };
 
@@ -198,6 +194,11 @@ const BookTicket = () => {
     const generatePayment = () => {
         if (passengerName.trim() === "") {
             return alert("Please enter passenger full name");
+        }
+
+        const nameRegex = /^[A-Za-z\s]+$/;
+        if (!nameRegex.test(passengerName)) {
+            return alert("Full Name must only contain letters and spaces");
         }
 
         if (!cnic || cnic.trim().length !== 13 || !/^\d{13}$/.test(cnic)) {
@@ -293,12 +294,13 @@ const BookTicket = () => {
                     paymentId,
                     coachNumber,
                     selectedSeats,
+                    status: "Pending Verification",
                 }
             );
 
             console.log(`Booking confirmed for passenger: ${passengerName}. Email dispatched to: ${user?.email || "user@test.com"}`);
             fetchTrains();
-            setIsBookingConfirmed(true);
+            setShowChallanSuccessModal(true);
         } catch (error) {
             alert(error.response?.data?.message || "Booking failed. Please try again.");
         }
@@ -352,7 +354,7 @@ const BookTicket = () => {
             {/* SEARCH SECTION */}
 
             <div className="bg-white p-6 rounded-xl shadow border mb-8 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     <div className="flex flex-col">
                         <label className="text-xs font-bold text-gray-500 mb-1">From Station</label>
                         <input
@@ -383,19 +385,6 @@ const BookTicket = () => {
                             onChange={(e) => setTravelDate(e.target.value)}
                             className="border p-3 rounded-lg w-full"
                         />
-                    </div>
-
-                    <div className="flex flex-col">
-                        <label className="text-xs font-bold text-gray-500 mb-1">Passengers</label>
-                        <select
-                            value={passengerCount}
-                            onChange={(e) => setPassengerCount(parseInt(e.target.value))}
-                            className="border p-3 rounded-lg w-full bg-white text-gray-700"
-                        >
-                            {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
-                                <option key={n} value={n}>{n} Passenger{n > 1 ? "s" : ""}</option>
-                            ))}
-                        </select>
                     </div>
                 </div>
 
@@ -454,6 +443,10 @@ const BookTicket = () => {
                                 </th>
 
                                 <th className="p-3 sticky top-0 bg-gray-100 z-10">
+                                    Travel Date
+                                </th>
+
+                                <th className="p-3 sticky top-0 bg-gray-100 z-10">
                                     Departure
                                 </th>
 
@@ -503,6 +496,12 @@ const BookTicket = () => {
 
                                         <td className="p-3">
                                             {
+                                                train.travelDate ? new Date(train.travelDate).toLocaleDateString('en-GB') : '—'
+                                            }
+                                        </td>
+
+                                        <td className="p-3">
+                                            {
                                                 train.departureTime
                                             }
                                         </td>
@@ -545,6 +544,13 @@ const BookTicket = () => {
                         </tbody>
 
                     </table>
+
+                    {sortedTrains.length === 0 && (
+                        <div className="text-center py-12">
+                            <p className="text-gray-400 text-lg font-semibold">No Trains Available</p>
+                            <p className="text-gray-400 text-sm mt-1">Try changing your search filters or selecting a different date.</p>
+                        </div>
+                    )}
 
                 </div>
 
@@ -1048,6 +1054,41 @@ const BookTicket = () => {
 
                 </div>
 
+            )}
+
+            {showChallanSuccessModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[30000] animate-fadeIn">
+                    <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-gray-100 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-yellow-500" />
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mb-6 text-yellow-600 border border-yellow-100">
+                                <svg className="w-8 h-8 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            
+                            <h3 className="text-2xl font-bold text-gray-800 mb-4">
+                                Booking Request Submitted
+                            </h3>
+                            
+                            <div className="text-gray-600 text-sm leading-relaxed space-y-4 mb-8">
+                                <p>Your booking request has been received successfully.</p>
+                                <p>Your ticket will be confirmed after staff verification.</p>
+                                <p>Please wait for approval.</p>
+                            </div>
+                            
+                            <button
+                                onClick={() => {
+                                    setShowChallanSuccessModal(false);
+                                    closeModal();
+                                }}
+                                className="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-md"
+                            >
+                                Got it
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
         </DashboardLayout>

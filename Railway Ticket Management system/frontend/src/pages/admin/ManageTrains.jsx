@@ -11,6 +11,7 @@ const ManageTrains = ({ isSubView }) => {
     source: "",
     destination: "",
     departureTime: "",
+    travelDate: "",
     totalCoaches: "7",
     ticketPrice: "",
   });
@@ -40,6 +41,11 @@ const ManageTrains = ({ isSubView }) => {
   // ADD TRAIN
   const addTrainHandler = async (e) => {
     e.preventDefault();
+    const priceNum = parseFloat(formData.ticketPrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      alert("Ticket price must be a positive value.");
+      return;
+    }
     try {
       await axios.post("http://localhost:5000/api/trains", formData);
       alert("Train Added Successfully");
@@ -48,12 +54,14 @@ const ManageTrains = ({ isSubView }) => {
         source: "",
         destination: "",
         departureTime: "",
+        travelDate: "",
         totalCoaches: "7",
         ticketPrice: "",
       });
       fetchTrains();
     } catch (error) {
       console.log(error);
+      alert(error.response?.data?.message || "Failed to add train");
     }
   };
 
@@ -78,6 +86,7 @@ const ManageTrains = ({ isSubView }) => {
       source: train.source,
       destination: train.destination,
       departureTime: train.departureTime,
+      travelDate: train.travelDate || "",
       totalCoaches: train.totalCoaches || "7",
       ticketPrice: train.ticketPrice,
     });
@@ -86,6 +95,11 @@ const ManageTrains = ({ isSubView }) => {
   // UPDATE TRAIN
   const updateHandler = async (e) => {
     e.preventDefault();
+    const priceNum = parseFloat(formData.ticketPrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      alert("Ticket price must be a positive value.");
+      return;
+    }
     try {
       await axios.put(`http://localhost:5000/api/trains/${editingTrain}`, formData);
       alert("Train Updated Successfully");
@@ -95,12 +109,14 @@ const ManageTrains = ({ isSubView }) => {
         source: "",
         destination: "",
         departureTime: "",
+        travelDate: "",
         totalCoaches: "7",
         ticketPrice: "",
       });
       fetchTrains();
     } catch (error) {
       console.log(error);
+      alert(error.response?.data?.message || "Failed to update train");
     }
   };
 
@@ -154,6 +170,14 @@ const ManageTrains = ({ isSubView }) => {
             className="border p-3 rounded-lg"
             required
           />
+          <input
+            type="date"
+            name="travelDate"
+            value={formData.travelDate}
+            onChange={handleChange}
+            className="border p-3 rounded-lg"
+            required
+          />
           <select
             name="totalCoaches"
             value={formData.totalCoaches}
@@ -175,6 +199,7 @@ const ManageTrains = ({ isSubView }) => {
             value={formData.ticketPrice}
             onChange={handleChange}
             className="border p-3 rounded-lg"
+            min="1"
             required
           />
           <button
@@ -194,6 +219,7 @@ const ManageTrains = ({ isSubView }) => {
               <tr className="bg-gray-100">
                 <th className="p-3 sticky top-0 bg-gray-100 z-10">Train</th>
                 <th className="p-3 sticky top-0 bg-gray-100 z-10">Route</th>
+                <th className="p-3 sticky top-0 bg-gray-100 z-10">Date</th>
                 <th className="p-3 sticky top-0 bg-gray-100 z-10">Time</th>
                 <th className="p-3 sticky top-0 bg-gray-100 z-10">Coaches & Capacity</th>
                 <th className="p-3 sticky top-0 bg-gray-100 z-10">Price</th>
@@ -205,6 +231,7 @@ const ManageTrains = ({ isSubView }) => {
                 <tr key={train._id} className="border-b hover:bg-gray-50">
                   <td className="p-3 font-semibold">{train.trainName}</td>
                   <td className="p-3">{train.source} → {train.destination}</td>
+                  <td className="p-3">{train.travelDate ? new Date(train.travelDate).toLocaleDateString('en-GB') : '—'}</td>
                   <td className="p-3">{train.departureTime}</td>
                   <td className="p-3">
                     <div className="font-semibold text-gray-800">

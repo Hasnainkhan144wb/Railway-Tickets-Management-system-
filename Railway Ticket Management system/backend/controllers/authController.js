@@ -103,6 +103,7 @@ const registerUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        avatar: user.avatar,
       },
     });
 
@@ -172,6 +173,7 @@ const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        avatar: user.avatar,
       },
     });
 
@@ -243,23 +245,47 @@ const updateProfile = async (req, res) => {
       });
     }
 
-    if (email && email !== user.email) {
-      const emailTaken = await User.findOne({ email });
-      if (emailTaken) {
+    if (user.role === "admin" || user.role === "staff") {
+      // Admin and Staff can update only avatar (profile picture).
+      if ((name && name !== user.name) || (email && email !== user.email) || password) {
         return res.status(400).json({
           success: false,
-          message: "Email is already in use by another account",
+          message: `As an ${user.role}, you can only update your profile picture.`,
         });
       }
-      user.email = email;
-    }
-
-    if (name) user.name = name;
-    if (avatar !== undefined) user.avatar = avatar;
-
-    if (password) {
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(password, salt);
+      if (avatar !== undefined) user.avatar = avatar;
+    } else if (user.role === "passenger") {
+      // Passenger can update Full Name, Password, Profile Picture (no Email).
+      if (email && email !== user.email) {
+        return res.status(400).json({
+          success: false,
+          message: "Passengers cannot update their email address.",
+        });
+      }
+      if (name) user.name = name;
+      if (avatar !== undefined) user.avatar = avatar;
+      if (password) {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+      }
+    } else {
+      // Fallback for other roles (if any)
+      if (email && email !== user.email) {
+        const emailTaken = await User.findOne({ email });
+        if (emailTaken) {
+          return res.status(400).json({
+            success: false,
+            message: "Email is already in use by another account",
+          });
+        }
+        user.email = email;
+      }
+      if (name) user.name = name;
+      if (avatar !== undefined) user.avatar = avatar;
+      if (password) {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+      }
     }
 
     await user.save();

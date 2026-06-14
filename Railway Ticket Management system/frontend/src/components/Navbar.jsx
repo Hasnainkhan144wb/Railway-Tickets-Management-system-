@@ -93,12 +93,7 @@ const Navbar = () => {
                     </NavLink>
 
 
-                    <button
-                        onClick={() => setIsStaffModalOpen(true)}
-                        className="hover:text-yellow-300 transition font-medium"
-                    >
-                        Staff
-                    </button>
+
 
 
                     {/* DARK / LIGHT MODE BUTTON */}
@@ -143,9 +138,8 @@ const Navbar = () => {
 
             {/* MOBILE DRAWER */}
             {isMobileMenuOpen && (
-                <div className={`md:hidden border-t ${
-                    darkMode ? "bg-gray-950/98 border-gray-800" : "bg-green-950/98 border-green-800"
-                } px-6 py-4 flex flex-col space-y-4 animate-fade-in-scale`}>
+                <div className={`md:hidden border-t ${darkMode ? "bg-gray-950/98 border-gray-800" : "bg-green-950/98 border-green-800"
+                    } px-6 py-4 flex flex-col space-y-4 animate-fade-in-scale`}>
                     <NavLink
                         to="/"
                         onClick={() => setIsMobileMenuOpen(false)}

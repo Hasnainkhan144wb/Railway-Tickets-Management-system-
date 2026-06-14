@@ -445,7 +445,7 @@ const PassengerDashboardContent = () => {
                           </span>
                         </td>
                         <td className="py-3.5 text-right font-bold capitalize">
-                          <span className={booking.status === "confirmed" ? "text-green-600" : "text-red-500"}>
+                          <span className={booking.status === "confirmed" ? "text-green-600" : booking.status === "Pending Verification" ? "text-amber-500" : "text-red-500"}>
                             {booking.status}
                           </span>
                         </td>

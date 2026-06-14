@@ -26,9 +26,14 @@ const ManageSeats = ({ isSubView }) => {
       alert("Please enter a seat count.");
       return;
     }
+    const count = Number(updatedSeats[id]);
+    if (isNaN(count) || count < 0) {
+      alert("Seat count cannot be negative.");
+      return;
+    }
     try {
       await axios.put(`http://localhost:5000/api/trains/${id}`, {
-        seats: updatedSeats[id],
+        seats: count,
       });
       alert("Seats Updated Successfully");
       fetchTrains();
@@ -77,6 +82,7 @@ const ManageSeats = ({ isSubView }) => {
                   <td className="p-3">
                     <input
                       type="number"
+                      min="0"
                       placeholder="Enter seats"
                       className="border p-2 rounded-lg w-32 focus:outline-none focus:border-green-900 transition text-sm"
                       onChange={(e) =>

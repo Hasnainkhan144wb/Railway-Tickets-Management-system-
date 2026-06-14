@@ -95,7 +95,7 @@ const AdminDashboard = () => {
 
       // Construct a unified activity log from bookings, users, and trains
       const activities = [];
-      
+
       // Last 4 Bookings
       bookings.slice(0, 4).forEach(b => {
         activities.push({
@@ -154,7 +154,7 @@ const AdminDashboard = () => {
 
   // Export Summary Report
   const handleExport = () => {
-    const csvContent = "data:text/csv;charset=utf-8," 
+    const csvContent = "data:text/csv;charset=utf-8,"
       + [
         ["Report Title", "Railway Management Admin Executive Report"],
         ["Generated At", new Date().toLocaleString()],
@@ -234,7 +234,7 @@ const AdminDashboard = () => {
             <FaSync className={loading ? "animate-spin" : ""} />
             Reload Stats
           </button>
-          
+
           <button
             onClick={handleExport}
             className="flex items-center gap-2 bg-blue-900 hover:bg-blue-800 text-white font-bold px-4 py-2.5 rounded-xl shadow transition"
@@ -308,36 +308,8 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* QUICK ACTIONS & SYSTEM HEALTH */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Quick Actions Panel */}
-            <div className="bg-white p-6 rounded-3xl shadow-sm border lg:col-span-2">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Quick Command Center</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <button
-                  onClick={() => handleQuickAction("add_route")}
-                  className="flex flex-col items-center justify-center p-4 rounded-2xl border hover:border-blue-900 hover:bg-blue-50/20 transition group text-center cursor-pointer"
-                >
-                  <FaFolderPlus className="text-blue-900 mb-2 group-hover:scale-110 transition duration-200" size={20} />
-                  <span className="text-xs font-bold text-gray-750">Add Route</span>
-                </button>
-                <button
-                  onClick={() => handleQuickAction("backup")}
-                  className="flex flex-col items-center justify-center p-4 rounded-2xl border hover:border-blue-900 hover:bg-blue-50/20 transition group text-center cursor-pointer"
-                >
-                  <FaDatabase className="text-purple-600 mb-2 group-hover:scale-110 transition duration-200" size={20} />
-                  <span className="text-xs font-bold text-gray-750">DB Backup</span>
-                </button>
-                <button
-                  onClick={() => handleQuickAction("clear_cache")}
-                  className="flex flex-col items-center justify-center p-4 rounded-2xl border hover:border-blue-900 hover:bg-blue-50/20 transition group text-center cursor-pointer"
-                >
-                  <FaSync className="text-amber-500 mb-2 group-hover:scale-110 transition duration-200" size={20} />
-                  <span className="text-xs font-bold text-gray-750">Flush Cache</span>
-                </button>
-              </div>
-            </div>
-
+          {/* SYSTEM HEALTH */}
+          <div className="grid grid-cols-1 gap-6">
             {/* System Health Status */}
             <div className="bg-white p-6 rounded-3xl shadow-sm border">
               <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">

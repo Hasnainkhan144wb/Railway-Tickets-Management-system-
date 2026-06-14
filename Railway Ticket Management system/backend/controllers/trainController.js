@@ -36,10 +36,20 @@ const addTrain =
         source,
         destination,
         departureTime,
+        travelDate,
         ticketPrice,
         trainStatus,
         totalCoaches,
       } = req.body;
+
+
+      // VALIDATE TICKET PRICE
+      const priceNum = Number(ticketPrice);
+      if (isNaN(priceNum) || priceNum <= 0) {
+        return res.status(400).json({
+          message: "Ticket price must be a positive value.",
+        });
+      }
 
 
       // VALIDATE COACH COUNT
@@ -89,6 +99,7 @@ const addTrain =
           source,
           destination,
           departureTime,
+          travelDate,
           ticketPrice,
           trainStatus,
           totalCoaches: numCoaches,
@@ -149,13 +160,15 @@ const updateTrain =
     try {
 
       const {
-
+        trainName,
+        source,
+        destination,
         departureTime,
-
+        travelDate,
+        totalCoaches,
+        ticketPrice,
         trainStatus,
-
         seats,
-
       } = req.body;
 
       const train =
@@ -176,17 +189,79 @@ const updateTrain =
       const oldStatus = train.trainStatus;
       const oldTime = train.departureTime;
 
-      train.departureTime =
-        departureTime ||
-        train.departureTime;
+      if (trainName !== undefined) train.trainName = trainName;
+      if (source !== undefined) train.source = source;
+      if (destination !== undefined) train.destination = destination;
+      if (departureTime !== undefined) train.departureTime = departureTime;
+      if (travelDate !== undefined) train.travelDate = travelDate;
+      if (trainStatus !== undefined) train.trainStatus = trainStatus;
+      if (seats !== undefined) {
+        const seatsNum = Number(seats);
+        if (isNaN(seatsNum) || seatsNum < 0) {
+          return res.status(400).json({
+            message: "Seats count cannot be negative.",
+          });
+        }
+        train.seats = seatsNum;
+      }
 
-      train.trainStatus =
-        trainStatus ||
-        train.trainStatus;
+      if (ticketPrice !== undefined) {
+        const priceNum = Number(ticketPrice);
+        if (isNaN(priceNum) || priceNum <= 0) {
+          return res.status(400).json({
+            message: "Ticket price must be a positive value.",
+          });
+        }
+        train.ticketPrice = priceNum;
+      }
 
-      train.seats =
-        seats ||
-        train.seats;
+      if (totalCoaches !== undefined) {
+        const numCoaches = Number(totalCoaches) || 7;
+        if (numCoaches < 1 || numCoaches > 7) {
+          return res.status(400).json({
+            message: "Number of coaches must be between 1 and 7",
+          });
+        }
+        if (numCoaches !== train.totalCoaches) {
+          train.totalCoaches = numCoaches;
+          // AUTO GENERATE COACHES (1 Coach = 18 Seats + 60 Berths)
+          const coaches = [];
+          for (let i = 1; i <= numCoaches; i++) {
+            const coach = {
+              coachNumber: `C${i}`,
+              seats: [],
+            };
+
+            // 18 Seats (01S to 18S)
+            for (let s = 1; s <= 18; s++) {
+              coach.seats.push({
+                seatNumber: `${s.toString().padStart(2, "0")}S`,
+                booked: false,
+              });
+            }
+
+            // 60 Berths (01B to 60B)
+            for (let b = 1; b <= 60; b++) {
+              coach.seats.push({
+                seatNumber: `${b.toString().padStart(2, "0")}B`,
+                booked: false,
+              });
+            }
+
+            coaches.push(coach);
+          }
+
+          train.coaches = coaches;
+          const totalSeatsCount = numCoaches * 78;
+          const totalSeatsField = numCoaches * 18;
+          const totalBerthsField = numCoaches * 60;
+          train.totalSeats = totalSeatsCount;
+          train.seats = totalSeatsCount;
+          train.availableSeats = totalSeatsField;
+          train.availableBerths = totalBerthsField;
+          train.totalBerths = totalBerthsField;
+        }
+      }
 
       await train.save();
 

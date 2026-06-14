@@ -14,6 +14,8 @@ const MyBookings = () => {
 
     const [bookings, setBookings] =
         useState([]);
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [bookingToCancel, setBookingToCancel] = useState(null);
 
     const user = JSON.parse(
         localStorage.getItem("user")
@@ -33,7 +35,7 @@ const MyBookings = () => {
                     );
 
                 setBookings(
-                    res.data
+                    res.data.filter(b => b.status !== "cancelled")
                 );
 
             } catch (error) {
@@ -72,6 +74,11 @@ const MyBookings = () => {
                 console.log(error);
             }
         };
+
+    const handleCancelClick = (id) => {
+        setBookingToCancel(id);
+        setShowCancelModal(true);
+    };
 
 
     // PAYMENT DONE
@@ -561,9 +568,10 @@ const MyBookings = () => {
 
                                         <span
                                             className={`px-3 py-1 rounded-full text-sm font-semibold
-                                            ${booking.status ===
-                                                    "confirmed"
+                                            ${booking.status === "confirmed"
                                                     ? "bg-green-100 text-green-700"
+                                                    : booking.status === "Pending Verification"
+                                                    ? "bg-amber-100 text-amber-700"
                                                     : "bg-red-100 text-red-700"
                                                 }`}
                                         >
@@ -579,73 +587,46 @@ const MyBookings = () => {
 
                                     {/* ACTIONS */}
 
-                                    <td className="p-3 flex flex-wrap gap-2">
-
-                                        {/* PAYMENT BUTTON */}
-
-                                        {booking.paymentStatus !==
-                                            "paid" && (
-
+                                    <td className="p-3 flex flex-col gap-2">
+                                        <div className="flex flex-wrap gap-2">
+                                            {/* PAYMENT BUTTON */}
+                                            {booking.paymentStatus !== "paid" && (
                                                 <button
-                                                    onClick={() =>
-                                                        makePayment(
-                                                            booking._id
-                                                        )
-                                                    }
+                                                    onClick={() => makePayment(booking._id)}
                                                     className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg"
                                                 >
                                                     Pay Now
                                                 </button>
-
                                             )}
 
+                                            {/* DOWNLOAD */}
+                                            <button
+                                                disabled={!booking.verified}
+                                                onClick={() => downloadTicket(booking)}
+                                                className={`px-4 py-2 rounded-lg font-medium transition ${
+                                                    booking.verified
+                                                        ? "bg-blue-900 hover:bg-blue-800 text-white cursor-pointer"
+                                                        : "bg-gray-300 text-gray-500 cursor-not-allowed opacity-50"
+                                                }`}
+                                            >
+                                                Download
+                                            </button>
 
-                                        {/* DOWNLOAD */}
-
-                                        <button
-                                            onClick={() =>
-                                                downloadTicket(
-                                                    booking
-                                                )
-                                            }
-                                            className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-lg"
-                                        >
-                                            Download
-                                        </button>
-
-
-                                        {/* PRINT */}
-
-                                        <button
-                                            onClick={() =>
-                                                printTicket(
-                                                    booking
-                                                )
-                                            }
-                                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
-                                        >
-                                            Print
-                                        </button>
-
-
-                                        {/* CANCEL */}
-
-                                        {booking.status ===
-                                            "confirmed" && (
-
+                                            {/* CANCEL */}
+                                            {booking.status === "confirmed" && (
                                                 <button
-                                                    onClick={() =>
-                                                        cancelTicket(
-                                                            booking._id
-                                                        )
-                                                    }
+                                                    onClick={() => handleCancelClick(booking._id)}
                                                     className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg"
                                                 >
                                                     Cancel
                                                 </button>
-
                                             )}
-
+                                        </div>
+                                        {!booking.verified && (
+                                            <span className="text-[10px] text-amber-600 font-semibold block">
+                                                E-Ticket download will be available after verification.
+                                            </span>
+                                        )}
                                     </td>
 
                                 </tr>
@@ -658,6 +639,51 @@ const MyBookings = () => {
                 </table>
 
             </div>
+
+            {showCancelModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[30000] animate-fadeIn">
+                    <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-gray-100 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-red-500" />
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6 text-red-600 border border-red-100">
+                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            
+                            <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                                Confirm Ticket Cancellation
+                            </h3>
+                            
+                            <p className="text-gray-600 text-sm leading-relaxed mb-8">
+                                Are you sure you want to cancel this ticket?
+                            </p>
+                            
+                            <div className="flex gap-4 w-full">
+                                <button
+                                    onClick={() => {
+                                        cancelTicket(bookingToCancel);
+                                        setShowCancelModal(false);
+                                        setBookingToCancel(null);
+                                    }}
+                                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-md"
+                                >
+                                    Yes, Cancel Ticket
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowCancelModal(false);
+                                        setBookingToCancel(null);
+                                    }}
+                                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-4 rounded-xl transition-all"
+                                >
+                                    No, Keep Ticket
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </DashboardLayout>
     );

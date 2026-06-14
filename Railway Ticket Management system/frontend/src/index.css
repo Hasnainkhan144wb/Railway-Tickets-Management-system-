@@ -43,3 +43,148 @@ body{
 .animate-fade-in-scale {
   animation: fadeInScale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
+
+/* ==========================================================================
+   GLOBAL DARK MODE STYLES
+   ========================================================================== */
+
+/* Main backgrounds */
+html.dark,
+html.dark body,
+html.dark .min-h-screen,
+html.dark .bg-gray-100 {
+  background-color: #0f172a !important; /* slate-900 */
+  color: #f8fafc !important;
+}
+
+/* White cards, panels and sidebars */
+html.dark .bg-white,
+html.dark .bg-gray-50,
+html.dark .bg-green-900 {
+  background-color: #1e293b !important; /* slate-800 */
+  color: #f1f5f9 !important;
+}
+
+/* Specific Topbar bg when white */
+html.dark .bg-white.shadow {
+  background-color: #1e293b !important;
+  border-bottom-color: #334155 !important;
+}
+
+/* Sidebar overriding green background */
+html.dark .fixed.left-0.top-0.h-screen.z-40 > div,
+html.dark .w-64.bg-green-900 {
+  background-color: #0f172a !important; /* dark slate background for sidebar */
+  border-right: 1px solid #334155 !important;
+}
+
+/* Text color overrides */
+html.dark .text-gray-800,
+html.dark .text-gray-900,
+html.dark .text-gray-755,
+html.dark .text-gray-700,
+html.dark .text-gray-655,
+html.dark .text-gray-600 {
+  color: #f1f5f9 !important; /* slate-100 */
+}
+
+html.dark .text-gray-500,
+html.dark .text-gray-400 {
+  color: #94a3b8 !important; /* slate-400 */
+}
+
+/* Borders */
+html.dark .border,
+html.dark .border-gray-100,
+html.dark .border-gray-150,
+html.dark .border-gray-200,
+html.dark .border-gray-250,
+html.dark .border-gray-300,
+html.dark .border-b {
+  border-color: #334155 !important; /* slate-700 */
+}
+
+/* Inputs, Selects, and Textareas */
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #0f172a !important; /* slate-900 */
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+html.dark input:disabled,
+html.dark select:disabled,
+html.dark textarea:disabled {
+  background-color: #1e293b !important; /* slate-800 */
+  color: #64748b !important; /* slate-500 */
+}
+
+/* Tables styling */
+html.dark table {
+  border-color: #334155 !important;
+}
+
+html.dark tr {
+  border-bottom-color: #334155 !important;
+}
+
+html.dark tr:hover {
+  background-color: rgba(30, 41, 59, 0.5) !important;
+}
+
+html.dark th {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+
+html.dark td {
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+
+/* Modals overlays & wrapper */
+html.dark .fixed.inset-0.bg-black\/50,
+html.dark .fixed.inset-0.bg-black\/60 {
+  background-color: rgba(0, 0, 0, 0.75) !important;
+}
+
+html.dark .bg-white.rounded-3xl {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+/* Dashboard stat/kpi cards transparent/glassmorphism overrides */
+html.dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+}
+html.dark .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  color: #60a5fa !important;
+}
+html.dark .bg-purple-50 {
+  background-color: rgba(139, 92, 246, 0.15) !important;
+  color: #c084fc !important;
+}
+html.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+}
+html.dark .bg-red-50 {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+html.dark .bg-green-50 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  color: #34d399 !important;
+}
+
+/* Links inside sidebar/navbar in dark mode */
+html.dark a {
+  color: #f1f5f9;
+}
+html.dark a:hover {
+  color: #fbbf24 !important; /* yellow hover */
+}
