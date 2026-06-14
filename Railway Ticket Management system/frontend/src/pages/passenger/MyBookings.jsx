@@ -554,10 +554,6 @@ Status: ${statusDisplay}`;
                             </th>
 
                             <th className="p-3 sticky top-0 bg-gray-100 z-10">
-                                Status
-                            </th>
-
-                            <th className="p-3 sticky top-0 bg-gray-100 z-10">
                                 Actions
                             </th>
 
@@ -674,29 +670,6 @@ Status: ${statusDisplay}`;
                                                     </span>
                                                 )
                                         }
-
-                                    </td>
-
-
-                                    {/* BOOKING STATUS */}
-
-                                    <td className="p-3">
-
-                                        <span
-                                            className={`px-3 py-1 rounded-full text-sm font-semibold
-                                            ${booking.status === "confirmed"
-                                                    ? "bg-green-100 text-green-700"
-                                                    : booking.status === "Pending Verification"
-                                                        ? "bg-amber-100 text-amber-700"
-                                                        : "bg-red-100 text-red-700"
-                                                }`}
-                                        >
-
-                                            {
-                                                booking.status
-                                            }
-
-                                        </span>
 
                                     </td>
 

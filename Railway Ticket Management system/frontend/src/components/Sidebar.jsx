@@ -1,6 +1,7 @@
 import {
     Link,
     useNavigate,
+    useLocation
 } from "react-router-dom";
 
 import {
@@ -19,10 +20,32 @@ import {
 const Sidebar = () => {
 
     const navigate = useNavigate();
+    const location = useLocation();
 
     const user = JSON.parse(
         localStorage.getItem("user")
     );
+
+    const currentPath = location.pathname;
+    const searchParams = new URLSearchParams(location.search);
+
+    const isActive = (path, tab = null) => {
+        if (tab !== null) {
+            const activeTab = searchParams.get("tab") || "dashboard";
+            return currentPath === path && activeTab === tab;
+        }
+        return currentPath === path;
+    };
+
+    const getLinkClass = (path, tab = null) => {
+        const active = isActive(path, tab);
+        return `flex items-center gap-3 transition font-bold ${active ? 'text-yellow-400' : 'text-white hover:text-yellow-300'}`;
+    };
+
+    const getPassengerLinkClass = (path) => {
+        const active = isActive(path);
+        return `flex items-center gap-3 transition ${active ? 'text-yellow-400 font-bold' : 'text-white hover:text-yellow-300'}`;
+    };
 
 
     // LOGOUT
@@ -59,7 +82,7 @@ const Sidebar = () => {
 
                             <Link
                                 to="/admin-dashboard?tab=dashboard"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
+                                className={getLinkClass("/admin-dashboard", "dashboard")}
                             >
                                 <FaHome />
                                 Dashboard
@@ -72,7 +95,7 @@ const Sidebar = () => {
 
                             <Link
                                 to="/admin-dashboard?tab=trains"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
+                                className={getLinkClass("/admin-dashboard", "trains")}
                             >
                                 <FaTrain />
                                 Manage Trains
@@ -85,7 +108,7 @@ const Sidebar = () => {
 
                             <Link
                                 to="/admin-dashboard?tab=users"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
+                                className={getLinkClass("/admin-dashboard", "users")}
                             >
                                 <FaUsers />
                                 Manage Users
@@ -98,7 +121,7 @@ const Sidebar = () => {
 
                             <Link
                                 to="/admin-dashboard?tab=bookings"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
+                                className={getLinkClass("/admin-dashboard", "bookings")}
                             >
                                 <FaClipboardList />
                                 All Bookings
@@ -109,7 +132,7 @@ const Sidebar = () => {
 
                             <Link
                                 to="/admin-dashboard?tab=reports"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
+                                className={getLinkClass("/admin-dashboard", "reports")}
                             >
 
                                 <FaChartBar />
@@ -136,7 +159,7 @@ const Sidebar = () => {
                         <li>
                             <Link
                                 to="/passenger-dashboard"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                className={getPassengerLinkClass("/passenger-dashboard")}
                             >
                                 <FaHome />
                                 Dashboard
@@ -149,7 +172,7 @@ const Sidebar = () => {
                         <li>
                             <Link
                                 to="/book-ticket"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                className={getPassengerLinkClass("/book-ticket")}
                             >
                                 <FaTicketAlt />
                                 Book Ticket
@@ -162,7 +185,7 @@ const Sidebar = () => {
                         <li>
                             <Link
                                 to="/my-bookings"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                className={getPassengerLinkClass("/my-bookings")}
                             >
                                 <FaTicketAlt />
                                 My Bookings
@@ -175,7 +198,7 @@ const Sidebar = () => {
                         <li>
                             <Link
                                 to="/booking-history"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                className={getPassengerLinkClass("/booking-history")}
                             >
                                 <FaClipboardList />
                                 Booking History
@@ -187,7 +210,7 @@ const Sidebar = () => {
                         <li>
                             <Link
                                 to="/notifications"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                className={getPassengerLinkClass("/notifications")}
                             >
                                 <FaBell />
                                 Notifications
@@ -198,7 +221,7 @@ const Sidebar = () => {
 
                             <Link
                                 to="/support"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition"
+                                className={getPassengerLinkClass("/support")}
                             >
 
                                 <FaHeadset />
@@ -220,7 +243,7 @@ const Sidebar = () => {
 
                             <Link
                                 to="/staff-dashboard?tab=dashboard"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
+                                className={getLinkClass("/staff-dashboard", "dashboard")}
                             >
                                 <FaHome />
                                 Dashboard
@@ -233,7 +256,7 @@ const Sidebar = () => {
 
                             <Link
                                 to="/staff-dashboard?tab=bookings"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
+                                className={getLinkClass("/staff-dashboard", "bookings")}
                             >
                                 <FaClipboardList />
                                 Manage Bookings
@@ -246,7 +269,7 @@ const Sidebar = () => {
 
                             <Link
                                 to="/staff-dashboard?tab=records"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
+                                className={getLinkClass("/staff-dashboard", "records")}
                             >
 
                                 <FaTicketAlt />
@@ -260,7 +283,7 @@ const Sidebar = () => {
 
                             <Link
                                 to="/staff-dashboard?tab=verify"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
+                                className={getLinkClass("/staff-dashboard", "verify")}
                             >
 
                                 <FaCheckCircle />
@@ -273,7 +296,7 @@ const Sidebar = () => {
                         <li>
                             <Link
                                 to="/staff-dashboard?tab=seats"
-                                className="flex items-center gap-3 hover:text-yellow-300 font-bold"
+                                className={getLinkClass("/staff-dashboard", "seats")}
                             >
                                 <FaTrain />
                                 Manage Seats
@@ -282,7 +305,7 @@ const Sidebar = () => {
                         <li>
                             <Link
                                 to="/staff-dashboard?tab=status"
-                                className="flex items-center gap-3 hover:text-yellow-300 font-bold"
+                                className={getLinkClass("/staff-dashboard", "status")}
                             >
                                 <FaTrain />
                                 Train Status
@@ -292,7 +315,7 @@ const Sidebar = () => {
 
                             <Link
                                 to="/staff-dashboard?tab=support"
-                                className="flex items-center gap-3 hover:text-yellow-300 transition font-bold"
+                                className={getLinkClass("/staff-dashboard", "support")}
                             >
 
                                 <FaHeadset />

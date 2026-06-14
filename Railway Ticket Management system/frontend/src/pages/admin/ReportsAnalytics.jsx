@@ -115,10 +115,16 @@ const ReportsAnalytics = ({ isSubView }) => {
     { name: "Active Routes", count: stats.totalTrains, fill: "#F59E0B" },
   ];
 
+  const ratio = stats.totalBookings > 0 
+    ? ((stats.activeBookings / stats.totalBookings) * 100).toFixed(2) 
+    : "0.00";
+
+  const unverifiedBookings = Math.max(0, stats.totalBookings - stats.activeBookings);
+
   // PIE CHART DATA
   const pieData = [
-    { name: "Confirmed Bookings", value: stats.activeBookings, color: "#10B981" },
-    { name: "Cancelled Bookings", value: stats.cancelledBookings, color: "#EF4444" },
+    { name: "Verified/Confirmed", value: stats.activeBookings, color: "#10B981" },
+    { name: "Unverified/Pending", value: unverifiedBookings, color: "#F59E0B" },
   ];
 
   const renderContent = () => (
@@ -217,7 +223,12 @@ const ReportsAnalytics = ({ isSubView }) => {
 
         {/* PIE CHART */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border">
-          <h2 className="text-xl font-bold text-gray-800 mb-6">Reservation Confirmation Ratios</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-800">Reservation Confirmation Ratios</h2>
+            <span className="text-sm font-extrabold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+              Ratio: {ratio}%
+            </span>
+          </div>
           <div className="w-full h-80 flex flex-col items-center">
             <ResponsiveContainer width="100%" height="90%">
               <PieChart>
