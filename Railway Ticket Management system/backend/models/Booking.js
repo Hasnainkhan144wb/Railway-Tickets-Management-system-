@@ -48,6 +48,16 @@ const bookingSchema =
             },
 
 
+            // PHONE NUMBER
+
+            phone: {
+
+                type: String,
+
+                required: true,
+            },
+
+
             // COACH NUMBER
 
             coachNumber: {
@@ -109,6 +119,14 @@ const bookingSchema =
             // PAYMENT ID
 
             paymentId: {
+
+                type: String,
+            },
+
+
+            // PAYMENT METHOD
+
+            paymentMethod: {
 
                 type: String,
             },

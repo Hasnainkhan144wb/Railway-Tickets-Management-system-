@@ -13,9 +13,11 @@ const createBooking = async (req, res) => {
             train,
             passengerName,
             cnic,
+            phone,
             selectedSeats,
             coachNumber,
             status,
+            paymentMethod,
         } = req.body;
 
         // VALIDATIONS
@@ -36,6 +38,12 @@ const createBooking = async (req, res) => {
         if (!cnic || cnic.trim().length !== 13 || !/^\d{13}$/.test(cnic)) {
             return res.status(400).json({
                 message: "CNIC must be exactly 13 digits",
+            });
+        }
+
+        if (!phone || phone.trim().length !== 11 || !/^\d{11}$/.test(phone.trim())) {
+            return res.status(400).json({
+                message: "Phone Number must be exactly 11 digits",
             });
         }
 
@@ -142,10 +150,12 @@ const createBooking = async (req, res) => {
                 train,
                 passengerName,
                 cnic,
+                phone,
                 seatsBooked,
                 coachNumber: coachNumberList,
                 selectedSeats,
                 paymentId,
+                paymentMethod,
                 paymentStatus: "pending",
                 verified: false,
                 status: status || "confirmed",

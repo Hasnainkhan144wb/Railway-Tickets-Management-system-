@@ -10,6 +10,7 @@ import axios from "axios";
 import DashboardLayout from "../../components/DashboardLayout";
 
 import jsPDF from "jspdf";
+import QRCode from "qrcode";
 
 import {
     FaTimes,
@@ -27,6 +28,7 @@ const BookTicket = () => {
     const [seatsBooked, setSeatsBooked] = useState(1);
     const [passengerName, setPassengerName] = useState("");
     const [cnic, setCnic] = useState("");
+    const [phone, setPhone] = useState("");
     const [paymentId, setPaymentId] = useState("");
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [selectedSeats, setSelectedSeats] = useState([]);
@@ -41,6 +43,11 @@ const BookTicket = () => {
     const [paymentMethod, setPaymentMethod] = useState("challan");
     const [cardDetails, setCardDetails] = useState({ number: "", expiry: "", cvc: "" });
     const [walletPhone, setWalletPhone] = useState("");
+    const [otpGenerated, setOtpGenerated] = useState("");
+    const [otpInput, setOtpInput] = useState("");
+    const [otpSent, setOtpSent] = useState(false);
+    const [isOtpVerified, setIsOtpVerified] = useState(false);
+    const [otpError, setOtpError] = useState("");
     const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
     const [showChallanSuccessModal, setShowChallanSuccessModal] = useState(false);
     const [timeLeft, setTimeLeft] = useState(600); // 10 minutes session
@@ -154,6 +161,7 @@ const BookTicket = () => {
         setSelectedTrain(null);
         setPassengerName("");
         setCnic("");
+        setPhone("");
         setSeatsBooked(1);
         setCoachNumber("");
         setSelectedSeats([]);
@@ -165,6 +173,11 @@ const BookTicket = () => {
         setPaymentMethod("challan");
         setCardDetails({ number: "", expiry: "", cvc: "" });
         setWalletPhone("");
+        setOtpGenerated("");
+        setOtpInput("");
+        setOtpSent(false);
+        setIsOtpVerified(false);
+        setOtpError("");
         setIsBookingConfirmed(false);
         setShowChallanSuccessModal(false);
         setTimeLeft(600);
@@ -205,6 +218,10 @@ const BookTicket = () => {
             return alert("CNIC must be exactly 13 digits (no dashes)");
         }
 
+        if (!phone || phone.trim().length !== 11 || !/^\d{11}$/.test(phone.trim())) {
+            return alert("Phone Number must be exactly 11 digits");
+        }
+
         if (selectedSeats.length === 0) {
             return alert("Please select at least 1 seat/berth from the layout");
         }
@@ -220,62 +237,146 @@ const BookTicket = () => {
     };
 
 
+    // Helper to format date
+    const formatDateStr = (dateStr) => {
+        if (!dateStr) return "TBD";
+        const parts = String(dateStr).split('T')[0].split('-');
+        if (parts.length === 3) {
+            if (parts[0].length === 4) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+            return `${parts[0]}-${parts[1]}-${parts[2]}`;
+        }
+        const d = new Date(dateStr);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}-${month}-${year}`;
+    };
+
+    // Helper to calculate arrival
+    const calculateArrival = (depTime) => {
+        if (!depTime) return "TBD";
+        const match = depTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+        if (!match) return depTime;
+        let hours = parseInt(match[1]);
+        const minutes = match[2];
+        const ampm = match[3];
+
+        hours += 8;
+
+        if (ampm) {
+            if (hours >= 12) {
+                const extra = Math.floor(hours / 12);
+                let nextHours = hours % 12;
+                if (nextHours === 0) nextHours = 12;
+                let nextAmpm = ampm.toUpperCase() === "AM" ? "PM" : "AM";
+                if (extra % 2 === 0) {
+                    nextAmpm = ampm.toUpperCase();
+                }
+                return `${String(nextHours).padStart(2, '0')}:${minutes} ${nextAmpm}`;
+            }
+            return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+        } else {
+            hours = hours % 24;
+            return `${String(hours).padStart(2, '0')}:${minutes}`;
+        }
+    };
+
+    // Helper to get payment method
+    const getPaymentMethodDisplay = (method) => {
+        if (!method) return "Challan";
+        const lower = method.toLowerCase();
+        if (lower === "challan") return "Challan";
+        if (lower === "card") return "Card";
+        if (lower === "wallet") return "JazzCash / EasyPaisa";
+        return method;
+    };
+
     // PDF TICKET GENERATOR
-    const downloadTicketPDF = () => {
-        const doc = new jsPDF();
+    const downloadTicketPDF = async () => {
+        const doc = new jsPDF({
+            orientation: "portrait",
+            unit: "mm",
+            format: "a4"
+        });
         const basePrice = selectedSeats.length * selectedTrain.ticketPrice;
         const fee = Math.round(basePrice * 0.05);
         const disc = Math.round(basePrice * (discountPercentage / 100));
         const total = basePrice + fee - disc;
 
-        doc.setFillColor(30, 58, 138); // Dark blue header
-        doc.rect(0, 0, 210, 40, "F");
-
-        doc.setFontSize(22);
-        doc.setTextColor(255, 255, 255);
-        doc.text("RAILWAY TICKET & RECEIPT", 20, 25);
-
-        doc.setFontSize(10);
-        doc.setTextColor(220, 220, 220);
-        doc.text(`Issued on: ${new Date().toLocaleDateString()}`, 150, 25);
-
-        // Ticket details container
-        doc.setDrawColor(200, 200, 200);
-        doc.setFillColor(250, 250, 250);
-        doc.rect(15, 50, 180, 100, "FD");
-
-        doc.setFontSize(12);
-        doc.setTextColor(50, 50, 50);
-
-        doc.text(`Passenger Name: ${passengerName}`, 20, 60);
-        doc.text(`CNIC: ${cnic}`, 20, 72);
-        doc.text(`Train Name: ${selectedTrain.trainName}`, 20, 84);
-        doc.text(`Departure: ${selectedTrain.departureTime}`, 20, 96);
-        doc.text(`Route: ${selectedTrain.source} -> ${selectedTrain.destination}`, 20, 108);
-
         const uniqueCoaches = [...new Set(selectedSeats.map(s => s.coach))].sort().join(", ");
         const formattedSeats = selectedSeats.map(s => `${s.coach}-${s.number}`).join(", ");
-        doc.text(`Coach: ${uniqueCoaches}`, 20, 120);
-        doc.text(`Seats: ${formattedSeats}`, 20, 132);
+        const travelDateFormatted = formatDateStr(travelDate || selectedTrain.travelDate);
+        const arrivalTimeComputed = calculateArrival(selectedTrain.departureTime);
+        const paymentMethodDisplay = getPaymentMethodDisplay(paymentMethod);
 
-        // Price details container
-        doc.rect(15, 160, 180, 60);
-        doc.text(`Base Fare: Rs. ${basePrice}`, 20, 172);
-        doc.text(`Service Fee (5%): Rs. ${fee}`, 20, 184);
-        if (disc > 0) {
-            doc.text(`Discount (${discountPercentage}%): -Rs. ${disc}`, 20, 196);
+        // QR Code plain text content
+        const qrText = `Passenger: ${passengerName}
+CNIC: ${cnic}
+Mobile: ${phone}
+Train: ${selectedTrain.trainName}
+From: ${selectedTrain.source}
+To: ${selectedTrain.destination}
+Date: ${travelDateFormatted}
+Departure: ${selectedTrain.departureTime}
+Arrival: ${arrivalTimeComputed}
+Coach: ${uniqueCoaches}
+Seat: ${formattedSeats}
+Payment ID: ${paymentId}
+Status: Pending Verification`;
+
+        let qrDataUrl = "";
+        try {
+            qrDataUrl = await QRCode.toDataURL(qrText, { margin: 1, width: 150 });
+        } catch (err) {
+            console.error("Failed to generate QR Code", err);
         }
-        doc.setFontSize(14);
-        doc.setTextColor(21, 128, 61); // Green total
-        doc.text(`Total Paid: Rs. ${total}`, 20, 210);
 
-        doc.setFontSize(12);
-        doc.setTextColor(185, 28, 28); // Red payment id
-        doc.text(`Payment ID: ${paymentId} (${paymentMethod.toUpperCase()})`, 20, 235);
+        // Generate Text-based Layout
+        doc.setFont("courier", "normal");
+        doc.setFontSize(10);
 
-        doc.setFontSize(9);
-        doc.setTextColor(120, 120, 120);
-        doc.text("Thank you for traveling with us. Please bring a copy of this ticket during journey.", 20, 260);
+        let y = 15;
+        const addLine = (text) => {
+            doc.text(text, 20, y);
+            y += 6;
+        };
+
+        addLine("=============================================");
+        addLine("          PAKISTAN RAILWAYS");
+        addLine("          E-TICKET / Challan RECEIPT");
+        addLine("=============================================");
+        addLine("");
+        addLine(`Passenger  : ${passengerName}`);
+        addLine(`CNIC       : ${cnic}`);
+        addLine(`Mobile     : ${phone}`);
+        addLine(`Train      : ${selectedTrain.trainName}`);
+        addLine(`From       : ${selectedTrain.source}`);
+        addLine(`To         : ${selectedTrain.destination}`);
+        addLine(`Date       : ${travelDateFormatted}`);
+        addLine(`Departure  : ${selectedTrain.departureTime}`);
+        addLine(`Arrival    : ${arrivalTimeComputed}`);
+        addLine(`Coach      : ${uniqueCoaches}`);
+        addLine(`Seat       : ${formattedSeats}`);
+        addLine("");
+        addLine("---------------------------------------------");
+        addLine(`Fare             : Rs. ${basePrice - disc}`);
+        addLine(`Service Charges  : Rs. ${fee}`);
+        addLine(`Total Paid       : Rs. ${total}`);
+        addLine("---------------------------------------------");
+        addLine("");
+        addLine(`Payment Method : ${paymentMethodDisplay}`);
+        addLine(`Payment ID     : ${paymentId}`);
+        addLine("");
+
+        if (qrDataUrl) {
+            doc.addImage(qrDataUrl, "PNG", 20, y, 35, 35);
+            y += 40;
+        }
+
+        addLine("Thank you for choosing Pakistan Railways.");
+        addLine("=============================================");
 
         doc.save(`railway-ticket-${paymentId}.pdf`);
     };
@@ -291,7 +392,9 @@ const BookTicket = () => {
                     seatsBooked: selectedSeats.length,
                     passengerName,
                     cnic,
+                    phone,
                     paymentId,
+                    paymentMethod,
                     coachNumber,
                     selectedSeats,
                     status: "Pending Verification",
@@ -577,7 +680,7 @@ const BookTicket = () => {
                     "
                     >
                         {/* Header Section */}
-                        <div 
+                        <div
                             className="relative z-50 px-8 py-5 border-b shadow-lg flex items-center justify-between"
                             style={{ background: 'linear-gradient(to right, #1e3a8a, #1d4ed8)' }}
                         >
@@ -644,7 +747,7 @@ const BookTicket = () => {
                                         {/* Notch cuts */}
                                         <div className="absolute top-1/2 -left-3 w-6 h-6 bg-gray-50 rounded-full border-r-2 border-dashed border-gray-200"></div>
                                         <div className="absolute top-1/2 -right-3 w-6 h-6 bg-gray-50 rounded-full border-l-2 border-dashed border-gray-200"></div>
-                                        
+
                                         <div className="flex justify-between items-center border-b pb-4 mb-4">
                                             <div>
                                                 <span className="text-[10px] uppercase font-bold text-gray-400">Boarding Pass</span>
@@ -697,8 +800,8 @@ const BookTicket = () => {
                                             <div className="flex justify-between text-lg font-bold border-t pt-2 text-green-700">
                                                 <span>Total Paid ({paymentMethod.toUpperCase()})</span>
                                                 <span>Rs. {
-                                                    (selectedSeats.length * selectedTrain.ticketPrice) + 
-                                                    Math.round(selectedSeats.length * selectedTrain.ticketPrice * 0.05) - 
+                                                    (selectedSeats.length * selectedTrain.ticketPrice) +
+                                                    Math.round(selectedSeats.length * selectedTrain.ticketPrice * 0.05) -
                                                     Math.round(selectedSeats.length * selectedTrain.ticketPrice * (discountPercentage / 100))
                                                 }</span>
                                             </div>
@@ -738,30 +841,6 @@ const BookTicket = () => {
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                         {/* Left Side: Promo & Payment Select */}
                                         <div className="space-y-6">
-                                            {/* PROMO CODE SECTION */}
-                                            <div className="bg-white p-6 rounded-2xl border">
-                                                <h4 className="font-bold text-gray-700 mb-2">Have a Promo Code?</h4>
-                                                <p className="text-xs text-gray-400 mb-3">Enter RAIL30 (30% off) or SAVE10 (10% off) to apply discounts.</p>
-                                                <div className="flex gap-2">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="e.g. RAIL30"
-                                                        value={promoCode}
-                                                        onChange={(e) => setPromoCode(e.target.value)}
-                                                        disabled={discountPercentage > 0}
-                                                        className="border p-2.5 rounded-xl flex-1 uppercase text-sm font-semibold tracking-wider"
-                                                    />
-                                                    <button
-                                                        onClick={applyPromoCode}
-                                                        disabled={discountPercentage > 0}
-                                                        className="bg-blue-900 hover:bg-blue-800 disabled:bg-gray-300 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all"
-                                                    >
-                                                        Apply
-                                                    </button>
-                                                </div>
-                                                {promoError && <p className="text-xs text-red-500 font-semibold mt-2">{promoError}</p>}
-                                                {promoSuccess && <p className="text-xs text-green-600 font-semibold mt-2">{promoSuccess}</p>}
-                                            </div>
 
                                             {/* PAYMENT METHOD SELECTOR */}
                                             <div className="bg-white p-6 rounded-2xl border space-y-4">
@@ -770,11 +849,10 @@ const BookTicket = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => setPaymentMethod("challan")}
-                                                        className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${
-                                                            paymentMethod === "challan"
+                                                        className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${paymentMethod === "challan"
                                                                 ? "border-blue-900 bg-blue-50 text-blue-900 font-bold"
                                                                 : "border-gray-250 hover:border-blue-200 bg-white text-gray-500"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <span className="text-2xl">📝</span>
                                                         <span className="text-xs">Challan</span>
@@ -782,11 +860,10 @@ const BookTicket = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => setPaymentMethod("card")}
-                                                        className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${
-                                                            paymentMethod === "card"
+                                                        className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${paymentMethod === "card"
                                                                 ? "border-blue-900 bg-blue-50 text-blue-900 font-bold"
                                                                 : "border-gray-250 hover:border-blue-200 bg-white text-gray-500"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <span className="text-2xl">💳</span>
                                                         <span className="text-xs">Card (Stripe)</span>
@@ -794,11 +871,10 @@ const BookTicket = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => setPaymentMethod("wallet")}
-                                                        className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${
-                                                            paymentMethod === "wallet"
+                                                        className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${paymentMethod === "wallet"
                                                                 ? "border-blue-900 bg-blue-50 text-blue-900 font-bold"
                                                                 : "border-gray-250 hover:border-blue-200 bg-white text-gray-500"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <span className="text-2xl">📱</span>
                                                         <span className="text-xs">Wallet</span>
@@ -847,19 +923,85 @@ const BookTicket = () => {
 
                                                 {/* MOCK MOBILE WALLET */}
                                                 {paymentMethod === "wallet" && (
-                                                    <div className="space-y-3 p-4 bg-white rounded-xl border border-blue-100 animate-fadeIn">
+                                                    <div className="space-y-4 p-4 bg-white rounded-xl border border-blue-100 animate-fadeIn">
                                                         <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Mobile Account Details</h5>
                                                         <div>
-                                                            <label className="text-[10px] text-gray-500 block mb-0.5">Mobile Account Number</label>
+                                                            <label className="text-[10px] text-gray-500 block mb-0.5 font-semibold">Mobile Account Number (11 Digits)</label>
                                                             <input
                                                                 type="text"
                                                                 placeholder="e.g. 03001234567"
                                                                 value={walletPhone}
-                                                                onChange={(e) => setWalletPhone(e.target.value)}
-                                                                className="border p-2 rounded-lg text-sm w-full font-mono"
+                                                                onChange={(e) => {
+                                                                    setWalletPhone(e.target.value);
+                                                                    setOtpSent(false);
+                                                                    setIsOtpVerified(false);
+                                                                    setOtpGenerated("");
+                                                                    setOtpInput("");
+                                                                    setOtpError("");
+                                                                }}
+                                                                disabled={isOtpVerified}
+                                                                className="border p-2.5 rounded-lg text-sm w-full font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                             />
                                                         </div>
-                                                        <p className="text-[10px] text-gray-400">An OTP authorization request will be sent to your phone.</p>
+
+                                                        {!otpSent && !isOtpVerified && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    if (!walletPhone || walletPhone.trim().length !== 11 || !/^\d{11}$/.test(walletPhone.trim())) {
+                                                                        alert("Mobile Account Number must be exactly 11 digits.");
+                                                                        return;
+                                                                    }
+                                                                    const code = Math.floor(1000 + Math.random() * 9000).toString();
+                                                                    setOtpGenerated(code);
+                                                                    setOtpSent(true);
+                                                                    setOtpError("");
+                                                                    alert(`OTP verification code [${code}] sent to ${walletPhone}.`);
+                                                                }}
+                                                                className="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-lg text-xs transition-all"
+                                                            >
+                                                                Generate OTP
+                                                            </button>
+                                                        )}
+
+                                                        {otpSent && !isOtpVerified && (
+                                                            <div className="space-y-3 pt-2 border-t border-gray-100 animate-fadeIn">
+                                                                <div>
+                                                                    <label className="text-[10px] text-gray-550 block mb-0.5 font-semibold">Enter 4-Digit OTP</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        maxLength="4"
+                                                                        placeholder="e.g. 1234"
+                                                                        value={otpInput}
+                                                                        onChange={(e) => setOtpInput(e.target.value)}
+                                                                        className="border p-2.5 rounded-lg text-sm w-full text-center font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                    />
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        if (otpInput === otpGenerated) {
+                                                                            setIsOtpVerified(true);
+                                                                            setOtpError("");
+                                                                        } else {
+                                                                            setOtpError("Invalid OTP, please try again.");
+                                                                        }
+                                                                    }}
+                                                                    className="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-lg text-xs transition-all"
+                                                                >
+                                                                    Confirm OTP
+                                                                </button>
+                                                                {otpError && (
+                                                                    <p className="text-[11px] text-red-500 font-semibold text-center">{otpError}</p>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {isOtpVerified && (
+                                                            <div className="bg-green-50 border border-green-200 text-green-750 p-2.5 rounded-xl text-center text-xs font-bold animate-fadeIn">
+                                                                ✓ Mobile Account Verified Successfully
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
 
@@ -893,8 +1035,8 @@ const BookTicket = () => {
                                                     <div className="border-t pt-3 flex justify-between items-center text-lg font-bold text-gray-800">
                                                         <span>Total Amount</span>
                                                         <span className="text-2xl text-green-700">Rs. {
-                                                            (selectedSeats.length * selectedTrain.ticketPrice) + 
-                                                            Math.round(selectedSeats.length * selectedTrain.ticketPrice * 0.05) - 
+                                                            (selectedSeats.length * selectedTrain.ticketPrice) +
+                                                            Math.round(selectedSeats.length * selectedTrain.ticketPrice * 0.05) -
                                                             Math.round(selectedSeats.length * selectedTrain.ticketPrice * (discountPercentage / 100))
                                                         }</span>
                                                     </div>
@@ -912,7 +1054,18 @@ const BookTicket = () => {
                                                 )}
                                                 <button
                                                     onClick={handleBooking}
-                                                    className="bg-green-700 hover:bg-green-800 text-white font-bold py-4 px-4 rounded-xl w-full transition-all shadow-md flex items-center justify-center gap-2 text-lg"
+                                                    disabled={
+                                                        paymentMethod === "card"
+                                                            ? (!cardDetails.number || !cardDetails.expiry || !cardDetails.cvc)
+                                                            : paymentMethod === "wallet"
+                                                                ? !isOtpVerified
+                                                                : false
+                                                    }
+                                                    className={`font-bold py-4 px-4 rounded-xl w-full transition-all shadow-md flex items-center justify-center gap-2 text-lg ${(paymentMethod === "card" && (!cardDetails.number || !cardDetails.expiry || !cardDetails.cvc)) ||
+                                                            (paymentMethod === "wallet" && !isOtpVerified)
+                                                            ? "bg-gray-300 text-gray-500 cursor-not-allowed opacity-50 shadow-none"
+                                                            : "bg-green-700 hover:bg-green-800 text-white cursor-pointer"
+                                                        }`}
                                                 >
                                                     {paymentMethod === "challan" ? "Confirm Challan Booking" : "Authorize Payment & Book"}
                                                 </button>
@@ -952,6 +1105,17 @@ const BookTicket = () => {
                                             </div>
 
                                             <div>
+                                                <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number (11 Digits) *</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g. 03001234567"
+                                                    value={phone}
+                                                    onChange={(e) => setPhone(e.target.value)}
+                                                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-50 font-mono"
+                                                />
+                                            </div>
+
+                                            <div>
                                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Coach Selection *</label>
                                                 <div className="flex flex-wrap gap-2">
                                                     {(selectedTrain?.coaches || []).map((coach) => {
@@ -961,11 +1125,10 @@ const BookTicket = () => {
                                                                 key={cNum}
                                                                 type="button"
                                                                 onClick={() => setCoachNumber(cNum)}
-                                                                className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all border ${
-                                                                    coachNumber === cNum
+                                                                className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all border ${coachNumber === cNum
                                                                         ? "bg-blue-900 text-white shadow"
                                                                         : "bg-white hover:bg-blue-50 border-gray-200 text-gray-600"
-                                                                }`}
+                                                                    }`}
                                                             >
                                                                 {cNum}
                                                             </button>
@@ -1066,17 +1229,17 @@ const BookTicket = () => {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>
                             </div>
-                            
+
                             <h3 className="text-2xl font-bold text-gray-800 mb-4">
                                 Booking Request Submitted
                             </h3>
-                            
+
                             <div className="text-gray-600 text-sm leading-relaxed space-y-4 mb-8">
                                 <p>Your booking request has been received successfully.</p>
                                 <p>Your ticket will be confirmed after staff verification.</p>
                                 <p>Please wait for approval.</p>
                             </div>
-                            
+
                             <button
                                 onClick={() => {
                                     setShowChallanSuccessModal(false);

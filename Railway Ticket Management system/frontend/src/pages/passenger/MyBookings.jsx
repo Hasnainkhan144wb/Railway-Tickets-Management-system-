@@ -8,6 +8,7 @@ import axios from "axios";
 import DashboardLayout from "../../components/DashboardLayout";
 
 import jsPDF from "jspdf";
+import QRCode from "qrcode";
 
 
 const MyBookings = () => {
@@ -107,8 +108,10 @@ const MyBookings = () => {
 
     // DOWNLOAD E-TICKET PDF
 
+    // DOWNLOAD E-TICKET PDF
+
     const downloadTicket =
-        (booking) => {
+        async (booking) => {
 
             if (!booking.verified) {
 
@@ -118,106 +121,239 @@ const MyBookings = () => {
             }
 
             const doc =
-                new jsPDF();
+                new jsPDF({
+                    orientation: "portrait",
+                    unit: "mm",
+                    format: "a4"
+                });
 
-            // HEADER
+            // Helper to format date
+            const formatDateStr = (dateStr) => {
+                if (!dateStr) return "TBD";
+                const parts = String(dateStr).split('T')[0].split('-');
+                if (parts.length === 3) {
+                    if (parts[0].length === 4) {
+                        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    }
+                    return `${parts[0]}-${parts[1]}-${parts[2]}`;
+                }
+                const d = new Date(dateStr);
+                const day = String(d.getDate()).padStart(2, '0');
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const year = d.getFullYear();
+                return `${day}-${month}-${year}`;
+            };
 
-            doc.setFontSize(22);
+            // Helper to calculate arrival
+            const calculateArrival = (depTime) => {
+                if (!depTime) return "TBD";
+                const match = depTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+                if (!match) return depTime;
+                let hours = parseInt(match[1]);
+                const minutes = match[2];
+                const ampm = match[3];
 
-            doc.text(
-                "Railway E-Ticket",
-                70,
-                20
-            );
+                hours += 8;
 
-            doc.line(
-                20,
-                30,
-                190,
-                30
-            );
+                if (ampm) {
+                    if (hours >= 12) {
+                        const extra = Math.floor(hours / 12);
+                        let nextHours = hours % 12;
+                        if (nextHours === 0) nextHours = 12;
+                        let nextAmpm = ampm.toUpperCase() === "AM" ? "PM" : "AM";
+                        if (extra % 2 === 0) {
+                            nextAmpm = ampm.toUpperCase();
+                        }
+                        return `${String(nextHours).padStart(2, '0')}:${minutes} ${nextAmpm}`;
+                    }
+                    return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+                } else {
+                    hours = hours % 24;
+                    return `${String(hours).padStart(2, '0')}:${minutes}`;
+                }
+            };
 
-            // PASSENGER INFO
+            // Helper to get payment method
+            const getPaymentMethodDisplay = (method) => {
+                if (!method) return "Challan";
+                const lower = method.toLowerCase();
+                if (lower === "challan") return "Challan";
+                if (lower === "card") return "Card";
+                if (lower === "wallet") return "JazzCash / EasyPaisa";
+                return method;
+            };
 
+            const basePrice = (booking.selectedSeats?.length || booking.seatsBooked || 1) * (booking.train?.ticketPrice || 0);
+            const fee = Math.round(basePrice * 0.05);
+            const total = basePrice + fee;
+
+            const uniqueCoaches = booking.coachNumber || "-";
+            const formattedSeats = booking.selectedSeats && booking.selectedSeats.length > 0 ? (booking.selectedSeats.map(s => s && typeof s === 'object' && s.coach && s.number ? `${s.coach}-${s.number}` : (s && typeof s === 'object' ? s.number || "" : s)).filter(Boolean).join(", ") || booking.seatNumber || "-") : booking.seatNumber || "-";
+            const travelDateFormatted = formatDateStr(booking.train?.travelDate);
+            const arrivalTimeComputed = calculateArrival(booking.train?.departureTime);
+            const paymentMethodDisplay = getPaymentMethodDisplay(booking.paymentMethod || "Challan");
+
+            // Helper to format date pretty (e.g. 28 May 2019)
+            const formatDateStrPretty = (dateStr) => {
+                if (!dateStr) return "TBD";
+                const d = new Date(dateStr);
+                const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                const day = d.getDate();
+                const month = months[d.getMonth()];
+                const year = d.getFullYear();
+                return `${day} ${month} ${year}`;
+            };
+
+            const travelDatePretty = formatDateStrPretty(booking.train?.travelDate);
+            const statusDisplay = booking.status ? booking.status.charAt(0).toUpperCase() + booking.status.slice(1) : "Confirmed";
+
+            // QR Code plain text content
+            const qrText = `Passenger: ${booking.passengerName}
+CNIC: ${booking.cnic}
+Mobile: ${booking.phone || "-"}
+Train: ${booking.train?.trainName || ""}
+From: ${booking.train?.source || ""}
+To: ${booking.train?.destination || ""}
+Date: ${travelDatePretty}
+Departure: ${booking.train?.departureTime || ""}
+Arrival: ${arrivalTimeComputed}
+Coach: ${uniqueCoaches}
+Seat: ${formattedSeats}
+Payment ID: ${booking.paymentId || ""}
+Status: ${statusDisplay}`;
+
+            let qrDataUrl = "";
+            try {
+                qrDataUrl = await QRCode.toDataURL(qrText, { margin: 1, width: 150 });
+            } catch (err) {
+                console.error("Failed to generate QR Code", err);
+            }
+
+            // Generate Text-based/Graphical Layout matching the reference image
+            // Draw Main Outer Border
+            doc.setDrawColor(200, 200, 200);
+            doc.setLineWidth(0.3);
+            doc.rect(15, 15, 180, 265);
+
+            // 1. Header Section (Pakistan Railways Logo & text block)
+            // PR Green Header Box/Emblem
+            doc.setFillColor(16, 124, 65);
+            doc.rect(20, 20, 15, 15, "F");
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
             doc.setFontSize(14);
+            doc.text("PR", 23, 30);
 
-            doc.text(
-                `Passenger Name: ${booking.passengerName}`,
-                20,
-                50
-            );
+            // English & Urdu text header
+            doc.setTextColor(16, 124, 65);
+            doc.setFontSize(22);
+            doc.text("PAKISTAN RAILWAYS", 42, 29);
+            doc.setFontSize(14);
+            doc.text("pakistan Zindabad ", 42, 34);
 
-            doc.text(
-                `CNIC: ${booking.cnic}`,
-                20,
-                65
-            );
+            doc.setDrawColor(220, 220, 220);
+            doc.line(15, 40, 195, 40);
 
-            doc.text(
-                `Payment ID: ${booking.paymentId}`,
-                20,
-                80
-            );
+            // 2. Journey Information (Train, Route, Coach, Travel Date)
+            doc.setTextColor(0, 0, 0);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.text(booking.train?.trainName || "", 20, 50);
 
-            doc.text(
-                `Coach: ${booking.coachNumber}`,
-                20,
-                95
-            );
+            const routeStr = `${booking.train?.source} to ${booking.train?.destination}`.toUpperCase();
+            doc.text(routeStr, 110, 50);
 
-            doc.text(
-                `Seats: ${booking.selectedSeats && booking.selectedSeats.length > 0 ? (booking.selectedSeats.map(s => s && typeof s === 'object' && s.coach && s.number ? `${s.coach}-${s.number}` : (s && typeof s === 'object' ? s.number || "" : s)).filter(Boolean).join(", ") || booking.seatNumber || "-") : booking.seatNumber || "-"}`,
-                20,
-                110
-            );
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(80, 80, 80);
+            doc.text(`Coach No : ${uniqueCoaches} / ${booking.seatType}`, 20, 60);
+            doc.text(`Travel Date : ${travelDatePretty} ${booking.train?.departureTime || ""}`, 110, 60);
 
-            // TRAIN INFO
+            doc.line(15, 68, 195, 68);
 
-            doc.text(
-                `Train: ${booking.train?.trainName}`,
-                20,
-                130
-            );
+            // 3. Order Information
 
-            doc.text(
-                `Source: ${booking.train?.source}`,
-                20,
-                160
-            );
 
-            doc.text(
-                `Destination: ${booking.train?.destination}`,
-                20,
-                175
-            );
+            // 4. Passenger & Booking Details Table
+            // Table Header Background
+            doc.setFillColor(248, 250, 252);
+            doc.rect(15, 80, 180, 8, "F");
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9);
+            doc.setTextColor(100, 116, 139);
+            doc.text("Seat No", 20, 85);
+            doc.text("Name", 45, 85);
+            doc.text("CNIC", 90, 85);
+            doc.text("Mobile No", 135, 85);
+            doc.text("Fare", 175, 85);
+            doc.line(15, 88, 195, 88);
 
-            doc.text(
-                `Departure Time: ${booking.train?.departureTime}`,
-                20,
-                190
-            );
+            // Table Body
+            let currentY = 94;
+            const seatsList = booking.selectedSeats && booking.selectedSeats.length > 0
+                ? booking.selectedSeats
+                : [{ coach: booking.coachNumber || "-", number: booking.seatNumber || "-" }];
 
-            doc.text(
-                `Seats Booked: ${booking.seatsBooked}`,
-                20,
-                205
-            );
+            seatsList.forEach((seat) => {
+                const seatStr = typeof seat === 'object' ? `${seat.coach}-${seat.number}` : seat;
+                const pName = booking.passengerName;
+                const pCnic = booking.cnic;
+                const pMobile = booking.phone || "-";
+                const pFare = (booking.train?.ticketPrice || 0).toFixed(2);
 
-            doc.text(
-                `Payment Status: ${booking.paymentStatus}`,
-                20,
-                220
-            );
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(9);
+                doc.setTextColor(30, 41, 59);
+                doc.text(String(seatStr), 20, currentY);
+                doc.text(String(pName), 45, currentY);
+                doc.text(String(pCnic), 90, currentY);
+                doc.text(String(pMobile), 135, currentY);
+                doc.text(String(pFare), 175, currentY);
 
-            doc.text(
-                `Verification: Verified`,
-                20,
-                235
-            );
+                currentY += 8;
+            });
+            doc.line(15, currentY - 2, 195, currentY - 2);
 
-            doc.save(
-                "railway-ticket.pdf"
-            );
+            // 5. Fare Summary
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(15, 23, 42);
+            const totalAmountStr = (seatsList.length * (booking.train?.ticketPrice || 0)).toFixed(2);
+            doc.text(`Total (Excluding charges): Rs. ${totalAmountStr}`, 120, currentY + 4);
+
+            currentY += 10;
+            doc.line(15, currentY, 195, currentY);
+
+            // 6. Ticket Footer Message
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(9);
+            doc.setTextColor(71, 85, 105);
+            doc.text("This is an electronic ticket generated by Pakistan Railways. Thank you for journey with us!", 32, currentY + 6);
+
+            currentY += 12;
+            doc.line(15, currentY, 195, currentY);
+
+            // 7. QR Code section
+            if (qrDataUrl) {
+                doc.addImage(qrDataUrl, "PNG", 85, currentY + 4, 38, 38);
+            }
+
+            currentY += 46;
+            doc.line(15, currentY, 195, currentY);
+
+            // 8. Important Notes
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(15, 23, 42);
+            doc.text("Note:", 20, currentY + 6);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.setTextColor(71, 85, 105);
+            doc.text("• A traveler must provide his/her original Name, CNIC No and Mobile No.", 20, currentY + 12);
+            doc.text("• Traveling with fake information on Ticket is not allowed.", 20, currentY + 18);
+
+            doc.save(`railway-ticket-${booking.paymentId || "ticket"}.pdf`);
         };
 
 
@@ -402,14 +538,6 @@ const MyBookings = () => {
                             </th>
 
                             <th className="p-3 sticky top-0 bg-gray-100 z-10">
-                                Coach
-                            </th>
-
-                            <th className="p-3 sticky top-0 bg-gray-100 z-10">
-                                Seats
-                            </th>
-
-                            <th className="p-3 sticky top-0 bg-gray-100 z-10">
                                 Booking Date
                             </th>
 
@@ -484,20 +612,8 @@ const MyBookings = () => {
 
 
                                     <td className="p-3">
-
-                                        {
-                                            booking.seatsBooked
-                                        }
-
-                                    </td>
-
-                                    <td className="p-3">
-                                        {booking.coachNumber}
-                                    </td>
-
-                                    <td className="p-3">
-                                        {booking.selectedSeats && booking.selectedSeats.length > 0 
-                                            ? (booking.selectedSeats.map(s => s && typeof s === 'object' && s.coach && s.number ? `${s.coach}-${s.number}` : (s && typeof s === 'object' ? s.number || "" : s)).filter(Boolean).join(", ") || booking.seatNumber || "-") 
+                                        {booking.selectedSeats && booking.selectedSeats.length > 0
+                                            ? (booking.selectedSeats.map(s => s && typeof s === 'object' && s.coach && s.number ? `${s.coach}-${s.number}` : (s && typeof s === 'object' ? s.number || "" : s)).filter(Boolean).join(", ") || booking.seatNumber || "-")
                                             : booking.seatNumber || "-"}
                                     </td>
 
@@ -571,8 +687,8 @@ const MyBookings = () => {
                                             ${booking.status === "confirmed"
                                                     ? "bg-green-100 text-green-700"
                                                     : booking.status === "Pending Verification"
-                                                    ? "bg-amber-100 text-amber-700"
-                                                    : "bg-red-100 text-red-700"
+                                                        ? "bg-amber-100 text-amber-700"
+                                                        : "bg-red-100 text-red-700"
                                                 }`}
                                         >
 
@@ -599,17 +715,15 @@ const MyBookings = () => {
                                                 </button>
                                             )}
 
-                                            {/* DOWNLOAD */}
                                             <button
                                                 disabled={!booking.verified}
                                                 onClick={() => downloadTicket(booking)}
-                                                className={`px-4 py-2 rounded-lg font-medium transition ${
-                                                    booking.verified
-                                                        ? "bg-blue-900 hover:bg-blue-800 text-white cursor-pointer"
-                                                        : "bg-gray-300 text-gray-500 cursor-not-allowed opacity-50"
-                                                }`}
+                                                className={`px-4 py-2 rounded-lg font-medium transition ${booking.verified
+                                                    ? "bg-blue-900 hover:bg-blue-800 text-white cursor-pointer"
+                                                    : "bg-gray-300 text-gray-500 cursor-not-allowed opacity-50"
+                                                    }`}
                                             >
-                                                Download
+                                                Download E-Ticket
                                             </button>
 
                                             {/* CANCEL */}
@@ -650,15 +764,15 @@ const MyBookings = () => {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>
                             </div>
-                            
+
                             <h3 className="text-2xl font-bold text-gray-800 mb-2">
                                 Confirm Ticket Cancellation
                             </h3>
-                            
+
                             <p className="text-gray-600 text-sm leading-relaxed mb-8">
                                 Are you sure you want to cancel this ticket?
                             </p>
-                            
+
                             <div className="flex gap-4 w-full">
                                 <button
                                     onClick={() => {
