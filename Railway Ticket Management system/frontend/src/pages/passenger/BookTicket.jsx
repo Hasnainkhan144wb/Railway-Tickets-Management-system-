@@ -50,6 +50,7 @@ const BookTicket = () => {
     const [otpError, setOtpError] = useState("");
     const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
     const [showChallanSuccessModal, setShowChallanSuccessModal] = useState(false);
+    const [challanDownloaded, setChallanDownloaded] = useState(false);
     const [timeLeft, setTimeLeft] = useState(600); // 10 minutes session
     const [showTimeoutModal, setShowTimeoutModal] = useState(false);
 
@@ -154,6 +155,7 @@ const BookTicket = () => {
         setSelectedSeats([]);
         setTimeLeft(600); // 10 minutes
         setIsBookingConfirmed(false);
+        setChallanDownloaded(false);
     };
 
     // CLOSE MODAL
@@ -181,6 +183,7 @@ const BookTicket = () => {
         setIsBookingConfirmed(false);
         setShowChallanSuccessModal(false);
         setTimeLeft(600);
+        setChallanDownloaded(false);
     };
 
     // PROMO CODE VERIFIER
@@ -295,6 +298,9 @@ const BookTicket = () => {
 
     // PDF TICKET GENERATOR
     const downloadTicketPDF = async () => {
+        if (paymentMethod === "challan") {
+            setChallanDownloaded(true);
+        }
         const doc = new jsPDF({
             orientation: "portrait",
             unit: "mm",
@@ -383,6 +389,10 @@ Status: Pending Verification`;
 
     // FINAL BOOKING
     const handleBooking = async () => {
+        if (paymentMethod === "challan" && !challanDownloaded) {
+            alert("Please download the challan before confirming your booking.");
+            return;
+        }
         try {
             await axios.post(
                 "http://localhost:5000/api/bookings",
@@ -1059,15 +1069,18 @@ Status: Pending Verification`;
                                                             ? (!cardDetails.number || !cardDetails.expiry || !cardDetails.cvc)
                                                             : paymentMethod === "wallet"
                                                                 ? !isOtpVerified
-                                                                : false
+                                                                : paymentMethod === "challan"
+                                                                    ? !challanDownloaded
+                                                                    : false
                                                     }
                                                     className={`font-bold py-4 px-4 rounded-xl w-full transition-all shadow-md flex items-center justify-center gap-2 text-lg ${(paymentMethod === "card" && (!cardDetails.number || !cardDetails.expiry || !cardDetails.cvc)) ||
-                                                            (paymentMethod === "wallet" && !isOtpVerified)
+                                                            (paymentMethod === "wallet" && !isOtpVerified) ||
+                                                            (paymentMethod === "challan" && !challanDownloaded)
                                                             ? "bg-gray-300 text-gray-500 cursor-not-allowed opacity-50 shadow-none"
                                                             : "bg-green-700 hover:bg-green-800 text-white cursor-pointer"
                                                         }`}
                                                 >
-                                                    {paymentMethod === "challan" ? "Confirm Challan Booking" : "Authorize Payment & Book"}
+                                                    {paymentMethod === "challan" ? "Confirm Ticket Booking" : "Authorize Payment & Book"}
                                                 </button>
                                             </div>
                                         </div>
