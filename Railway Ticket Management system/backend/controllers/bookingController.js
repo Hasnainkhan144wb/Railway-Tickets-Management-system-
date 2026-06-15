@@ -227,7 +227,8 @@ const getBookings = async (
         const bookings =
             await Booking.find()
                 .populate("user")
-                .populate("train");
+                .populate("train")
+                .sort({ createdAt: -1 });
 
         res.json(bookings);
 

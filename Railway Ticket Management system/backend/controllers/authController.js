@@ -36,6 +36,14 @@ const registerUser = async (req, res) => {
       accessCode,
     } = req.body;
 
+    const nameRegex = /^[A-Za-z\s]+$/;
+    if (!name || !nameRegex.test(name.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: "Name must contain only letters and spaces.",
+      });
+    }
+
     // VALIDATE ROLE ACCESS CODES
     if (role === "admin") {
       const adminCode = process.env.ADMIN_ACCESS_CODE || "admin123";

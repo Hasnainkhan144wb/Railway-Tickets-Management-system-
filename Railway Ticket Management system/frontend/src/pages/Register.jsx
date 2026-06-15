@@ -144,9 +144,12 @@ const Register = () => {
   const validateForm = () => {
     const tempErrors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const nameRegex = /^[A-Za-z\s]+$/;
 
     if (!formData.name.trim()) {
       tempErrors.name = "Full Name is required";
+    } else if (!nameRegex.test(formData.name.trim())) {
+      tempErrors.name = "Name must contain only letters and spaces.";
     }
 
     if (!formData.email) {
